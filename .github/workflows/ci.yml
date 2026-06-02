@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies (Gateway)
+      run: cd gateway && npm ci
+    
+    - name: Install dependencies (Auth Service)
+      run: cd services/auth-service && npm ci
+    
+    - name: Install dependencies (Order Service)
+      run: cd services/order-service && npm ci
+    
+    - name: Install dependencies (Notification Service)
+      run: cd services/notification-service && npm ci
+    
+    - name: Run tests
+      run: npm run test
+      
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3

@@ -1,0 +1,18 @@
+groups:
+  - name: recording_rules
+    interval: 30s
+    rules:
+      - record: instance:node_cpu:rate5m
+        expr: rate(node_cpu_seconds_total[5m])
+
+      - record: instance:node_memory_utilization:ratio
+        expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+
+      - record: job:http_requests:rate5m
+        expr: sum(rate(http_requests_total[5m])) by (job)
+
+      - record: job:http_errors:rate5m
+        expr: sum(rate(http_requests_failed[5m])) by (job)
+
+      - record: job:http_latency:p95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))

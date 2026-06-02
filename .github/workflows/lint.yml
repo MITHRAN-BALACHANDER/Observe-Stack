@@ -1,0 +1,39 @@
+name: Lint
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Check JSON formatting
+      run: |
+        find . -name "*.json" -type f ! -path "./node_modules/*" | xargs node -e "
+        const fs = require('fs');
+        process.argv.slice(1).forEach(file => {
+          try {
+            JSON.parse(fs.readFileSync(file, 'utf8'));
+          } catch(e) {
+            console.error(\`Invalid JSON: \${file}\`);
+            process.exit(1);
+          }
+        });
+        "
+    
+    - name: Check YAML formatting
+      uses: ibiqlik/action-yamllint@v3
+      with:
+        file_or_dir: '.'
+        config_file: .yamllint
