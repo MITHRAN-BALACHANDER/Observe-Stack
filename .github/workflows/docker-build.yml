@@ -2,14 +2,34 @@ name: Docker Publish
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
 
+# Publishing to Docker Hub only happens on semver tags (e.g. v1.0.0).
+# Push to main runs the build-check job inside ci.yml instead.
+# Requires repository secrets: DOCKER_USERNAME, DOCKER_PASSWORD
+
 jobs:
+  check-credentials:
+    name: Check Docker credentials
+    runs-on: ubuntu-latest
+    outputs:
+      has-creds: ${{ steps.check.outputs.has-creds }}
+    steps:
+      - name: Verify secrets are set
+        id: check
+        run: |
+          if [[ -n "${{ secrets.DOCKER_USERNAME }}" && -n "${{ secrets.DOCKER_PASSWORD }}" ]]; then
+            echo "has-creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-creds=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::DOCKER_USERNAME or DOCKER_PASSWORD secret is not set. Skipping publish."
+          fi
+
   publish:
     name: Build & Push (${{ matrix.service }})
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    needs: check-credentials
+    if: needs.check-credentials.outputs.has-creds == 'true'
 
     strategy:
       fail-fast: false
@@ -43,7 +63,6 @@ jobs:
         with:
           images: ${{ secrets.DOCKER_USERNAME }}/observastack-${{ matrix.service }}
           tags: |
-            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-

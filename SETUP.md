@@ -26,9 +26,6 @@ Each service has a dev script:
 cd gateway && npm run dev
 ```
 
-## Contributing
-
-See CONTRIBUTING.md for guidelines.
 
 ## License
 
