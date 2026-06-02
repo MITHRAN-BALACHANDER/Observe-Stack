@@ -1,15 +1,22 @@
-// Get order route
-module.exports = async (req, res) => {
-  const { orderId } = req.query;
-  
-  if (!orderId) {
-    return res.status(400).json({ error: 'Order ID required' });
+const express = require('express');
+const logger = require('../logging/logger');
+const orders = require('../store/orders');
+
+const router = express.Router();
+
+router.get('/:id', (req, res) => {
+  const { id } = req.params;
+  const log = logger.child({ requestId: req.requestId, correlationId: req.correlationId });
+
+  const order = orders.get(id);
+
+  if (!order) {
+    log.warn('order not found', { orderId: id });
+    return res.status(404).json({ error: 'order not found', orderId: id });
   }
-  
-  res.json({
-    orderId,
-    status: 'completed',
-    items: [],
-    totalAmount: 99.99
-  });
-};
+
+  log.info('order retrieved', { orderId: id });
+  res.json(order);
+});
+
+module.exports = router;

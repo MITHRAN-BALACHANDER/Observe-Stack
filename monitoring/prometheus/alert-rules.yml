@@ -1,48 +1,129 @@
 groups:
-  - name: service_alerts
+
+  # ── Service Health ────────────────────────────────────────────────────────
+  - name: service_health
     interval: 30s
     rules:
-      - alert: HighCPUUsage
-        expr: node_cpu_seconds_total{mode="system"} > 0.8
-        for: 5m
-        annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80%"
-
-      - alert: HighMemoryUsage
-        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.1
-        for: 5m
-        annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 90%"
-
       - alert: ServiceDown
         expr: up == 0
         for: 1m
+        labels:
+          severity: critical
         annotations:
-          summary: "Service is down"
-          description: "Service {{ $labels.job }} is not responding"
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} ({{ $labels.instance }}) has been unreachable for more than 1 minute."
+          runbook: "https://github.com/observastack/runbooks/service-down"
 
-      - alert: HighErrorRate
-        expr: rate(http_requests_failed[5m]) / rate(http_requests_total[5m]) > 0.05
-        for: 5m
+      - alert: ContainerRestart
+        expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+        for: 0m
+        labels:
+          severity: warning
         annotations:
-          summary: "High error rate"
-          description: "Error rate is above 5%"
+          summary: "Container {{ $labels.container }} restarting frequently"
+          description: "Container {{ $labels.container }} has restarted {{ $value }} times in the last 15 minutes."
 
-      - alert: HighLatency
-        expr: histogram_quantile(0.95, http_request_duration_seconds_bucket) > 1
-        for: 5m
-        annotations:
-          summary: "High latency detected"
-          description: "95th percentile latency is above 1s"
-
-  - name: business_alerts
-    interval: 1m
+  # ── Infrastructure ────────────────────────────────────────────────────────
+  - name: infrastructure
+    interval: 60s
     rules:
-      - alert: OrderProcessingBacklog
-        expr: order_queue_size > 100
-        for: 10m
+      - alert: HighCPU
+        expr: >
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
         annotations:
-          summary: "Order queue backlog"
-          description: "Order queue size is {{ $value }}"
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ printf \"%.1f\" $value }}% on {{ $labels.instance }} (threshold: 80%)."
+
+      - alert: HighMemory
+        expr: >
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ printf \"%.1f\" $value }}% on {{ $labels.instance }} (threshold: 85%)."
+
+      - alert: DiskSpaceLow
+        expr: >
+          (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"})) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ printf \"%.1f\" $value }}% full on {{ $labels.instance }}."
+
+  # ── Application SLOs ─────────────────────────────────────────────────────
+  - name: application_slos
+    interval: 30s
+    rules:
+      - alert: HighLatency
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High p95 latency on {{ $labels.job }}"
+          description: "95th percentile latency for {{ $labels.job }} is {{ printf \"%.2f\" $value }}s (threshold: 1s)."
+
+      - alert: ErrorRateSpike
+        expr: >
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
+            /
+            sum(rate(http_requests_total[5m])) by (job)
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate for {{ $labels.job }} is {{ printf \"%.1f\" (mul $value 100) }}% (threshold: 5%)."
+
+  # ── Business Metrics ─────────────────────────────────────────────────────
+  - name: business_metrics
+    interval: 60s
+    rules:
+      - alert: QueueBacklog
+        expr: active_orders_total > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Order queue backlog building up"
+          description: "{{ $value }} orders are currently active/pending (threshold: 50)."
+
+      - alert: HighLoginFailureRate
+        expr: >
+          (
+            rate(login_failure_total[5m])
+            /
+            (rate(login_success_total[5m]) + rate(login_failure_total[5m]) + 0.001)
+          ) > 0.30
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High login failure rate"
+          description: "Login failure rate is {{ printf \"%.1f\" (mul $value 100) }}% over the last 5 minutes."
+
+      - alert: NotificationDeliveryDegraded
+        expr: >
+          (
+            rate(notifications_failed_total[5m])
+            /
+            (rate(notifications_sent_total[5m]) + rate(notifications_failed_total[5m]) + 0.001)
+          ) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Notification delivery degraded"
+          description: "Notification failure rate is {{ printf \"%.1f\" (mul $value 100) }}%."

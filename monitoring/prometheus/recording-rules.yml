@@ -1,18 +1,86 @@
 groups:
-  - name: recording_rules
+
+  # ── Infrastructure recording rules ───────────────────────────────────────
+  - name: infrastructure_recording
     interval: 30s
     rules:
-      - record: instance:node_cpu:rate5m
-        expr: rate(node_cpu_seconds_total[5m])
+      - record: instance:node_cpu_utilization:rate5m
+        expr: >
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
       - record: instance:node_memory_utilization:ratio
-        expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+        expr: >
+          1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
 
+      - record: instance:node_disk_utilization:ratio
+        expr: >
+          1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"})
+
+      - record: instance:node_network_receive:rate5m
+        expr: rate(node_network_receive_bytes_total[5m])
+
+      - record: instance:node_network_transmit:rate5m
+        expr: rate(node_network_transmit_bytes_total[5m])
+
+  # ── HTTP request recording rules ──────────────────────────────────────────
+  - name: http_recording
+    interval: 30s
+    rules:
       - record: job:http_requests:rate5m
         expr: sum(rate(http_requests_total[5m])) by (job)
 
       - record: job:http_errors:rate5m
-        expr: sum(rate(http_requests_failed[5m])) by (job)
+        expr: >
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
 
-      - record: job:http_latency:p95
-        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job))
+      - record: job:http_error_ratio:rate5m
+        expr: >
+          job:http_errors:rate5m
+          /
+          (job:http_requests:rate5m + 0.001)
+
+      - record: job:http_latency_p50:rate5m
+        expr: >
+          histogram_quantile(0.50,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+      - record: job:http_latency_p95:rate5m
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+      - record: job:http_latency_p99:rate5m
+        expr: >
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)
+          )
+
+  # ── Business KPI recording rules ──────────────────────────────────────────
+  - name: business_recording
+    interval: 60s
+    rules:
+      - record: observastack:login_success_rate:rate5m
+        expr: >
+          rate(login_success_total[5m])
+          /
+          (rate(login_success_total[5m]) + rate(login_failure_total[5m]) + 0.001)
+
+      - record: observastack:order_success_rate:rate5m
+        expr: >
+          rate(orders_created_total[5m])
+          /
+          (rate(orders_created_total[5m]) + rate(orders_failed_total[5m]) + 0.001)
+
+      - record: observastack:notification_success_rate:rate5m
+        expr: >
+          rate(notifications_sent_total[5m])
+          /
+          (rate(notifications_sent_total[5m]) + rate(notifications_failed_total[5m]) + 0.001)
+
+      - record: observastack:order_processing_p95:rate5m
+        expr: >
+          histogram_quantile(0.95,
+            sum(rate(order_processing_latency_seconds_bucket[5m])) by (le)
+          )

@@ -1,4 +1,5 @@
-// Queue management for order processing
+const { activeOrdersTotal } = require('../metrics/prometheus');
+
 class OrderQueue {
   constructor() {
     this.queue = [];
@@ -6,10 +7,13 @@ class OrderQueue {
 
   enqueue(order) {
     this.queue.push(order);
+    activeOrdersTotal.set(this.queue.length);
   }
 
   dequeue() {
-    return this.queue.shift();
+    const order = this.queue.shift();
+    activeOrdersTotal.set(this.queue.length);
+    return order;
   }
 
   size() {

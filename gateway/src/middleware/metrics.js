@@ -2,33 +2,30 @@ const logger = require('../logging/logger');
 const { httpRequestDuration, httpRequestTotal, httpRequestErrors } = require('../metrics/prometheus');
 
 module.exports = (req, res, next) => {
-  const start = Date.now();
-  const route = req.route?.path || req.path;
+  if (req.path === '/metrics') return next();
+
+  const startTime = process.hrtime.bigint();
 
   res.on('finish', () => {
-    const duration = (Date.now() - start) / 1000;
-    const statusCode = res.statusCode;
+    const durationNs = process.hrtime.bigint() - startTime;
+    const durationSeconds = Number(durationNs) / 1e9;
+    const route = req.route?.path || req.path;
+    const { statusCode } = res;
 
-    httpRequestDuration
-      .labels(req.method, route, statusCode)
-      .observe(duration);
-
-    httpRequestTotal
-      .labels(req.method, route, statusCode)
-      .inc();
+    httpRequestDuration.labels(req.method, route, statusCode).observe(durationSeconds);
+    httpRequestTotal.labels(req.method, route, statusCode).inc();
 
     if (statusCode >= 400) {
-      httpRequestErrors
-        .labels(req.method, route, statusCode)
-        .inc();
+      httpRequestErrors.labels(req.method, route, statusCode).inc();
     }
 
-    logger.info('HTTP request', {
+    logger.info('request proxied', {
+      requestId: req.requestId,
+      correlationId: req.correlationId,
       method: req.method,
-      route,
+      path: req.path,
       statusCode,
-      duration,
-      correlationId: req.correlationId
+      latencyMs: (durationSeconds * 1000).toFixed(3)
     });
   });
 

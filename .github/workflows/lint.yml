@@ -2,38 +2,36 @@ name: Lint
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
-  lint:
+  json-lint:
+    name: Validate JSON files
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    
-    - name: Check JSON formatting
-      run: |
-        find . -name "*.json" -type f ! -path "./node_modules/*" | xargs node -e "
-        const fs = require('fs');
-        process.argv.slice(1).forEach(file => {
-          try {
-            JSON.parse(fs.readFileSync(file, 'utf8'));
-          } catch(e) {
-            console.error(\`Invalid JSON: \${file}\`);
-            process.exit(1);
-          }
-        });
-        "
-    
-    - name: Check YAML formatting
-      uses: ibiqlik/action-yamllint@v3
-      with:
-        file_or_dir: '.'
-        config_file: .yamllint
+      - uses: actions/checkout@v4
+
+      - name: Check JSON validity
+        run: |
+          find . -name "*.json" -type f \
+            ! -path "./.git/*" \
+            ! -path "*/node_modules/*" \
+            ! -path "*/coverage/*" | while read -r file; do
+            node -e "JSON.parse(require('fs').readFileSync('${file}'))" 2>&1 \
+              && echo "OK: ${file}" \
+              || { echo "INVALID JSON: ${file}"; exit 1; }
+          done
+
+  yaml-lint:
+    name: Validate YAML files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: yamllint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: '.'
+          config_file: .yamllint

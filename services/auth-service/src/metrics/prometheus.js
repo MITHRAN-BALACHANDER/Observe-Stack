@@ -2,25 +2,48 @@ const client = require('prom-client');
 
 const register = new client.Registry();
 
+register.setDefaultLabels({ service: 'auth-service' });
 client.collectDefaultMetrics({ register });
 
-const authAttempts = new client.Counter({
-  name: 'auth_attempts_total',
-  help: 'Total authentication attempts',
-  labelNames: ['result'],
+const authRequestsTotal = new client.Counter({
+  name: 'auth_requests_total',
+  help: 'Total number of auth requests by method, path, and status',
+  labelNames: ['method', 'path', 'status'],
   registers: [register]
 });
 
-const authDuration = new client.Histogram({
-  name: 'auth_duration_seconds',
-  help: 'Authentication operation duration',
-  labelNames: ['operation'],
-  registers: [register],
-  buckets: [0.01, 0.05, 0.1, 0.5, 1]
+const loginSuccessTotal = new client.Counter({
+  name: 'login_success_total',
+  help: 'Total number of successful login attempts',
+  registers: [register]
+});
+
+const loginFailureTotal = new client.Counter({
+  name: 'login_failure_total',
+  help: 'Total number of failed login attempts',
+  labelNames: ['reason'],
+  registers: [register]
+});
+
+const authLatencySeconds = new client.Histogram({
+  name: 'auth_latency_seconds',
+  help: 'Auth service request latency in seconds',
+  labelNames: ['method', 'path', 'status'],
+  buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  registers: [register]
+});
+
+const activeSessionsTotal = new client.Gauge({
+  name: 'active_sessions_total',
+  help: 'Estimated number of active JWT sessions',
+  registers: [register]
 });
 
 module.exports = {
   register,
-  authAttempts,
-  authDuration
+  authRequestsTotal,
+  loginSuccessTotal,
+  loginFailureTotal,
+  authLatencySeconds,
+  activeSessionsTotal
 };

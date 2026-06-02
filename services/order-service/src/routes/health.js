@@ -1,4 +1,15 @@
-// Health check route
-module.exports = (req, res) => {
-  res.json({ status: 'healthy' });
-};
+const express = require('express');
+
+const router = express.Router();
+const startTime = Date.now();
+
+router.get('/', (req, res) => {
+  res.json({
+    status: 'up',
+    service: 'order-service',
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    timestamp: new Date().toISOString()
+  });
+});
+
+module.exports = router;

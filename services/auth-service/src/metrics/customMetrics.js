@@ -1,15 +1,15 @@
-// Custom metrics specific to auth service
-const { authAttempts, authDuration } = require('../metrics/prometheus');
+const { loginSuccessTotal, loginFailureTotal, authLatencySeconds } = require('./prometheus');
 
-function recordAuthAttempt(success) {
-  authAttempts.labels(success ? 'success' : 'failure').inc();
+function recordLoginSuccess() {
+  loginSuccessTotal.inc();
 }
 
-function recordAuthDuration(operation, duration) {
-  authDuration.labels(operation).observe(duration);
+function recordLoginFailure(reason) {
+  loginFailureTotal.inc({ reason });
 }
 
-module.exports = {
-  recordAuthAttempt,
-  recordAuthDuration
-};
+function recordLatency(method, path, status, durationSeconds) {
+  authLatencySeconds.observe({ method, path, status }, durationSeconds);
+}
+
+module.exports = { recordLoginSuccess, recordLoginFailure, recordLatency };
