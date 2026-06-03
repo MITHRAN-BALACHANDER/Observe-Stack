@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   lint-and-test:
     name: Lint & Test (${{ matrix.service }})
@@ -32,10 +35,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 18
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: ${{ matrix.path }}/package-lock.json
 
@@ -134,5 +137,6 @@ jobs:
         run: |
           docker run --rm \
             -v "${{ github.workspace }}/monitoring/alertmanager:/etc/alertmanager:ro" \
+            -e DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/000000000000000000/placeholder \
             prom/alertmanager:v0.26.0 \
             amtool check-config /etc/alertmanager/alertmanager.yml

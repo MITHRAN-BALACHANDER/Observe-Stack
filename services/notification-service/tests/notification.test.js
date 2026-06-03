@@ -136,7 +136,7 @@ describe('Notification Service', () => {
         body: 'Hello'
       });
       const res = await request(app).get('/metrics');
-      expect(res.text).toMatch(/notifications_sent_total\{type="email"\}\s+1/);
+      expect(res.text).toMatch(/notifications_sent_total\{type="email"[^}]*\}\s+1/);
     });
 
     it('increments notifications_sent_total on successful SMS', async () => {
@@ -145,7 +145,7 @@ describe('Notification Service', () => {
         message: 'Test'
       });
       const res = await request(app).get('/metrics');
-      expect(res.text).toMatch(/notifications_sent_total\{type="sms"\}\s+1/);
+      expect(res.text).toMatch(/notifications_sent_total\{type="sms"[^}]*\}\s+1/);
     });
   });
 });

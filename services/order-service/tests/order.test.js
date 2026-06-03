@@ -109,7 +109,7 @@ describe('Order Service', () => {
         totalAmount: 10
       });
       const res = await request(app).get('/metrics');
-      expect(res.text).toMatch(/orders_created_total\s+1/);
+      expect(res.text).toMatch(/orders_created_total\{[^}]*\}\s+1/);
     });
 
     it('increments orders_failed_total on processing error', async () => {
@@ -120,7 +120,7 @@ describe('Order Service', () => {
         totalAmount: 5
       });
       const res = await request(app).get('/metrics');
-      expect(res.text).toMatch(/orders_failed_total\{reason="processing_error"\}\s+1/);
+      expect(res.text).toMatch(/orders_failed_total\{reason="processing_error"[^}]*\}\s+1/);
     });
   });
 });
