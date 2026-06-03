@@ -8,6 +8,9 @@ on:
 # Push to main runs the build-check job inside ci.yml instead.
 # Requires repository secrets: DOCKER_USERNAME, DOCKER_PASSWORD
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check-credentials:
     name: Check Docker credentials
