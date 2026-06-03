@@ -80,7 +80,7 @@ For load testing:
 
 ```bash
 # Clone and enter the repo
-git clone <repo-url> observastack
+git clone https://github.com/MITHRAN-BALACHANDER/Observe-Stack observastack
 cd observastack
 
 # Copy environment config
@@ -98,7 +98,7 @@ docker compose ps
 | Service | URL | Credentials |
 |---------|-----|-------------|
 | API Gateway | http://localhost:3000 | — |
-| Grafana | http://localhost:3001 | admin / observastack |
+| Grafana | http://localhost:3030 | admin / observastack |
 | Prometheus | http://localhost:9090 | — |
 | Alertmanager | http://localhost:9093 | — |
 | Loki | http://localhost:3100 | — |
@@ -203,7 +203,7 @@ Promtail collects these via the Docker socket and ships them to Loki. Use Grafan
 
 ### Grafana Dashboards
 
-Four pre-provisioned dashboards are available at http://localhost:3001:
+Four pre-provisioned dashboards are available at http://localhost:3030:
 
 | Dashboard | UID | Purpose |
 |-----------|-----|---------|
@@ -221,14 +221,15 @@ Four pre-provisioned dashboards are available at http://localhost:3001:
 | Alert | Severity | Condition | Duration |
 |-------|----------|-----------|----------|
 | ServiceDown | critical | `up == 0` | 1m |
+| ContainerRestart | warning | restarts > 3 in 15m | immediate |
 | HighCPU | warning | CPU > 80% | 5m |
 | HighMemory | warning | Memory > 85% | 5m |
 | DiskSpaceLow | warning | Disk > 85% | 10m |
 | HighLatency | warning | p95 > 1s | 5m |
 | ErrorRateSpike | critical | Error rate > 5% | 2m |
 | QueueBacklog | warning | active_orders > 50 | 10m |
-| HighLoginFailureRate | warning | Failure rate > 30% | 3m |
-| NotificationDeliveryDegraded | warning | Failure rate > 20% | 5m |
+| HighLoginFailureRate | warning | Login failure rate > 30% | 3m |
+| NotificationDeliveryDegraded | warning | Notification failure rate > 20% | 5m |
 
 ### Discord Webhook Setup
 
@@ -344,7 +345,7 @@ observastack/
 
 **Promtail not collecting logs**: Ensure `/var/lib/docker/containers` is accessible. On some systems the Docker data root is different — check `docker info | grep "Docker Root Dir"`.
 
-**Port conflict on 3001**: Grafana uses host port 3001. If you run an auth-service locally outside Docker, change `GRAFANA_PORT` in `.env`.
+**Port conflict on 3030**: Grafana uses host port 3030 by default. Change `GRAFANA_PORT` in `.env` if that port is already bound on your machine.
 
 ---
 

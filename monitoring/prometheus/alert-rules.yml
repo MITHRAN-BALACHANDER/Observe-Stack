@@ -12,16 +12,15 @@ groups:
         annotations:
           summary: "Service {{ $labels.job }} is down"
           description: "{{ $labels.job }} ({{ $labels.instance }}) has been unreachable for more than 1 minute."
-          runbook: "https://github.com/observastack/runbooks/service-down"
 
       - alert: ContainerRestart
-        expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+        expr: changes(up[15m]) >= 4
         for: 0m
         labels:
           severity: warning
         annotations:
-          summary: "Container {{ $labels.container }} restarting frequently"
-          description: "Container {{ $labels.container }} has restarted {{ $value }} times in the last 15 minutes."
+          summary: "Service {{ $labels.job }} restarting frequently"
+          description: "{{ $labels.job }} has toggled up/down {{ $value }} times in the last 15 minutes, indicating crash-looping."
 
   # ── Infrastructure ────────────────────────────────────────────────────────
   - name: infrastructure
@@ -85,7 +84,7 @@ groups:
           severity: critical
         annotations:
           summary: "High error rate on {{ $labels.job }}"
-          description: "Error rate for {{ $labels.job }} is {{ printf \"%.1f\" (mul $value 100) }}% (threshold: 5%)."
+          description: "Error rate for {{ $labels.job }} is {{ humanizePercentage $value }} (threshold: 5%)."
 
   # ── Business Metrics ─────────────────────────────────────────────────────
   - name: business_metrics
@@ -112,7 +111,7 @@ groups:
           severity: warning
         annotations:
           summary: "High login failure rate"
-          description: "Login failure rate is {{ printf \"%.1f\" (mul $value 100) }}% over the last 5 minutes."
+          description: "Login failure rate is {{ humanizePercentage $value }} over the last 5 minutes."
 
       - alert: NotificationDeliveryDegraded
         expr: >
@@ -126,4 +125,4 @@ groups:
           severity: warning
         annotations:
           summary: "Notification delivery degraded"
-          description: "Notification failure rate is {{ printf \"%.1f\" (mul $value 100) }}%."
+          description: "Notification failure rate is {{ humanizePercentage $value }}."
