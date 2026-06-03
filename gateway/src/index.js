@@ -20,9 +20,9 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     backends: {
-      auth: process.env.AUTH_SERVICE_URL || 'http://auth-service:3001',
-      order: process.env.ORDER_SERVICE_URL || 'http://order-service:3002',
-      notification: process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3003'
+      auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+      order: process.env.ORDER_SERVICE_URL || 'http://localhost:3002',
+      notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3003'
     }
   });
 });

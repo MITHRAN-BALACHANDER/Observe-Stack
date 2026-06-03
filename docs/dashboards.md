@@ -21,6 +21,8 @@ Panels pulled from Node Exporter (`job="node-exporter"`):
 
 Use this dashboard to correlate a latency or error alert with host-level resource pressure. If CPU spikes and you see `HighCPU` fire in the Incident dashboard, this is where you dig into which process caused it.
 
+![Infrastructure dashboard](images/dashboard-infrastructure.png)
+
 ---
 
 ## Application Dashboard
@@ -36,6 +38,8 @@ Panels pulled from the gateway and backend services:
 - Per-service histograms: `auth_latency_seconds`, `order_processing_latency_seconds`, `notification_latency_seconds`
 
 These recording rules are computed from the raw histograms and counters every 15 seconds. If p95 latency climbs above 1 second, the `HighLatency` alert will fire after 5 minutes.
+
+![Application dashboard](images/dashboard-application.png)
 
 ---
 
@@ -53,6 +57,8 @@ Panels showing the application's business-level KPIs:
 
 Under normal load with default failure rates (5% orders, 8% notifications), these panels show a steady baseline. When a `simulate-error-spike.sh` run is active, the success rates drop visibly within 30 seconds.
 
+![Business dashboard](images/dashboard-business.png)
+
 ---
 
 ## Incident Dashboard
@@ -69,6 +75,8 @@ Designed to be the first dashboard opened when an alert fires:
 - Order failure rate trend
 
 The time range defaults to the last 30 minutes. Narrow it to 5 minutes when triaging an active incident to reduce noise.
+
+![Incident dashboard](images/dashboard-incident.png)
 
 ---
 

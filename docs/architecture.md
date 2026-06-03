@@ -6,6 +6,8 @@ ObservaStack is a set of three Node.js services behind an API gateway, with a fu
 
 The gateway is the only public entry point. It proxies requests to the three backend services, strips the path prefix, and propagates the correlation ID header so requests can be traced across service boundaries.
 
+![System architecture overview](images/arch-system-diagram.png)
+
 ```text
 Client
   │
@@ -119,6 +121,8 @@ A typical order creation request:
 9. Prometheus scrapes both `/metrics` endpoints within the next 15 seconds.
 
 To trace the full request: query Loki with `{service=~"api-gateway|order-service"} |= "<correlationId>"`.
+
+![Order request sequence across services](images/arch-request-flow.png)
 
 ---
 

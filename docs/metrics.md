@@ -2,6 +2,8 @@
 
 All services expose a `/metrics` endpoint in Prometheus text format. Prometheus scrapes every 15 seconds. Node.js default metrics (event loop lag, heap, GC, libuv handles) are collected automatically via `prom-client`'s `collectDefaultMetrics()`.
 
+![Prometheus targets — all services UP](images/prometheus-targets.png)
+
 ---
 
 ## Application metrics
@@ -143,6 +145,8 @@ Node memory utilization:
 ```promql
 instance:node_memory_utilization:ratio
 ```
+
+![Prometheus graph — request rate by service](images/prometheus-graph.png)
 
 ---
 

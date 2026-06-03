@@ -48,6 +48,8 @@ These use the recording rules pre-computed in `recording-rules.yml`:
 
 `HighLoginFailureRate` fires when the ratio of `login_failure_total` to `auth_requests_total` exceeds 30% for three minutes. At the default 5% order failure rate and 8% notification failure rate, these alerts should remain quiet under normal load.
 
+![Prometheus alert rules page](images/prometheus-alerts.png)
+
 ---
 
 ## Alertmanager routing
@@ -77,6 +79,10 @@ To configure the webhook:
 ### Inhibition
 
 When `ServiceDown` is active for a job, all other alerts for that job are inhibited. This prevents a service restart from generating a flood of `HighErrorRate`, `HighLatency`, and `QueueBacklog` notifications simultaneously.
+
+![Alertmanager UI with active alert groups](images/alertmanager-ui.png)
+
+<!-- ![Discord alert notification](images/discord-alert.png) -->
 
 ---
 

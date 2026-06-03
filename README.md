@@ -59,6 +59,8 @@ A production-inspired distributed observability platform demonstrating SRE engin
                               └─────────────────────┘
 ```
 
+![System architecture](docs/images/arch-system-diagram.png)
+
 ---
 
 ## Prerequisites
@@ -92,6 +94,8 @@ docker compose up -d
 # Verify all containers are healthy (takes ~30s)
 docker compose ps
 ```
+
+![All containers healthy](docs/images/stack-healthy.png)
 
 ### Service URLs
 
@@ -211,6 +215,8 @@ Four pre-provisioned dashboards are available at http://localhost:3030:
 | Application | observastack-app | Request rate, Error rate, p95/p99 latency |
 | Business | observastack-biz | Login success rate, Orders, Notifications |
 | Incident | observastack-incident | Active alerts, Service availability, Error trends |
+
+![Grafana dashboard home](docs/images/grafana-home.png)
 
 ---
 

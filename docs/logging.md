@@ -55,6 +55,8 @@ Promtail attaches the following labels to every log stream:
 
 Promtail's pipeline also drops health-check log lines to reduce noise. Any log line with `GET /health` in the message is filtered out before shipping to Loki.
 
+![Grafana Explore — Loki log stream with parsed labels](images/loki-explore.png)
+
 ---
 
 ## Querying logs in Grafana
@@ -126,6 +128,8 @@ Then query Loki:
 ```logql
 {compose_service=~"api-gateway|order-service"} | json | correlationId = "<value>"
 ```
+
+![Cross-service correlation trace in Loki](images/loki-correlation-trace.png)
 
 ---
 

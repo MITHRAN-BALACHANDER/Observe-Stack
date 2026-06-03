@@ -29,6 +29,8 @@ Open these in parallel:
 - Alertmanager: <http://localhost:9093>
 - Grafana Incident dashboard: <http://localhost:3030/d/observastack-incident>
 
+![Prometheus alerts page with a firing alert](images/runbook-alerts-firing.png)
+
 ---
 
 ## ServiceDown (critical)
