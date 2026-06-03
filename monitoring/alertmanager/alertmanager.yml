@@ -25,33 +25,36 @@ route:
 receivers:
   - name: 'discord-critical'
     discord_configs:
-      - webhook_url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN'
+      - webhook_url: '${DISCORD_WEBHOOK_URL}'
         send_resolved: true
-        title: '🔴 [CRITICAL] ObservaStack Alert'
+        title: '[CRITICAL] ObservaStack Alert'
         message: |
           {{ range .Alerts }}
           **Alert:** {{ .Annotations.summary }}
           **Details:** {{ .Annotations.description }}
-          **Service:** {{ .Labels.job }}
+          **Service:** {{ if .Labels.job }}{{ .Labels.job }}{{ else }}unknown{{ end }}
+          **Severity:** {{ if .Labels.severity }}{{ .Labels.severity }}{{ else }}unknown{{ end }}
           **Started:** {{ .StartsAt.Format "2006-01-02 15:04:05 UTC" }}
           {{ end }}
 
   - name: 'discord-warnings'
     discord_configs:
-      - webhook_url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN'
+      - webhook_url: '${DISCORD_WEBHOOK_URL}'
         send_resolved: true
-        title: '⚠️ [WARNING] ObservaStack Alert'
+        title: '[WARNING] ObservaStack Alert'
         message: |
           {{ range .Alerts }}
           **Alert:** {{ .Annotations.summary }}
           **Details:** {{ .Annotations.description }}
-          **Service:** {{ .Labels.job }}
+          **Service:** {{ if .Labels.job }}{{ .Labels.job }}{{ else }}unknown{{ end }}
+          **Severity:** {{ if .Labels.severity }}{{ .Labels.severity }}{{ else }}unknown{{ end }}
           {{ end }}
 
 inhibit_rules:
-  # ServiceDown inhibits all other alerts for the same job
+  # ServiceDown inhibits application-level alerts for the same job, but NOT
+  # infrastructure alerts (CPU, memory, disk) — those explain WHY a service went down.
   - source_matchers:
       - alertname = "ServiceDown"
     target_matchers:
-      - alertname != "ServiceDown"
+      - alertname =~ "ContainerRestart|ErrorRateSpike|HighLatency|QueueBacklog"
     equal: ['job']

@@ -6,7 +6,7 @@ const { register } = require('./metrics/prometheus');
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(correlationIdMiddleware);
 app.use(metricsMiddleware);
 
@@ -32,9 +32,21 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3002;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info('order-service started', { port: PORT });
   });
+
+  const shutdown = (signal) => {
+    logger.info('shutting down', { signal });
+    server.close(() => {
+      logger.info('server closed');
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

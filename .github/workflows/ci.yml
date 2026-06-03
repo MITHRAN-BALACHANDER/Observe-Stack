@@ -43,6 +43,10 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: npm ci
 
+      - name: Audit dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm audit --audit-level=high
+
       - name: Run tests with coverage
         working-directory: ${{ matrix.path }}
         run: ${{ matrix.test_cmd }}
@@ -51,13 +55,17 @@ jobs:
           LOG_LEVEL: error
           JWT_SECRET: test-secret-do-not-use-in-prod
           FAILURE_RATE: '0'
+          AUTH_SERVICE_URL: http://localhost:3001
+          ORDER_SERVICE_URL: http://localhost:3002
+          NOTIFICATION_SERVICE_URL: http://localhost:3003
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
-        if: always()
+        if: success()
         with:
           directory: ${{ matrix.path }}/coverage
           flags: ${{ matrix.service }}
+          fail_ci_if_error: false
 
   docker-build-check:
     name: Docker Build (${{ matrix.service }})

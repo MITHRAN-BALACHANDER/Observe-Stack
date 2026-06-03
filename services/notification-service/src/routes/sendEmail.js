@@ -6,15 +6,16 @@ const { notificationsSentTotal, notificationsFailedTotal, notificationLatencySec
 const router = express.Router();
 
 const FAILURE_RATE = () => parseFloat(process.env.FAILURE_RATE || '0.08');
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 router.post('/', async (req, res) => {
   const { to, subject, body } = req.body;
   const log = logger.child({ requestId: req.requestId, correlationId: req.correlationId });
 
-  if (!to || !subject || !body) {
+  if (!to || !EMAIL_RE.test(to) || !subject || !body) {
     notificationsFailedTotal.inc({ type: 'email', reason: 'validation_error' });
-    log.warn('email send rejected: missing fields');
-    return res.status(400).json({ error: 'to, subject, and body are required' });
+    log.warn('email send rejected: missing or invalid fields');
+    return res.status(400).json({ error: 'to (valid email address), subject, and body are required' });
   }
 
   const deliveryStart = process.hrtime.bigint();

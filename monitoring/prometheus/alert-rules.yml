@@ -77,7 +77,7 @@ groups:
           (
             sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)
             /
-            sum(rate(http_requests_total[5m])) by (job)
+            (sum(rate(http_requests_total[5m])) by (job) + 0.001)
           ) > 0.05
         for: 2m
         labels:

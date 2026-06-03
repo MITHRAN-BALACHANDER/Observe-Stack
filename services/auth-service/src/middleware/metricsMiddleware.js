@@ -1,5 +1,5 @@
 const logger = require('../logging/logger');
-const { authRequestsTotal, authLatencySeconds } = require('../metrics/prometheus');
+const { authRequestsTotal, authLatencySeconds, httpRequestsTotal, httpRequestDurationSeconds } = require('../metrics/prometheus');
 
 module.exports = (req, res, next) => {
   if (req.path === '/metrics') return next();
@@ -13,6 +13,8 @@ module.exports = (req, res, next) => {
 
     authRequestsTotal.inc(labels);
     authLatencySeconds.observe(labels, durationSeconds);
+    httpRequestsTotal.inc(labels);
+    httpRequestDurationSeconds.observe(labels, durationSeconds);
 
     logger.info('request completed', {
       requestId: req.requestId,

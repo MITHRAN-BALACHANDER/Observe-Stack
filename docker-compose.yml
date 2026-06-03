@@ -13,6 +13,7 @@ services:
     environment:
       - NODE_ENV=production
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - AUTH_SERVICE_URL=http://auth-service:3001
       - ORDER_SERVICE_URL=http://order-service:3002
       - NOTIFICATION_SERVICE_URL=http://notification-service:3003
@@ -51,10 +52,6 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
       - observability
     restart: unless-stopped
@@ -82,10 +79,6 @@ services:
       - PORT=3002
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - FAILURE_RATE=${ORDER_FAILURE_RATE:-0.05}
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
       - observability
     restart: unless-stopped
@@ -164,7 +157,6 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-30d}'
       - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
     networks:
       - observability
     restart: unless-stopped
@@ -259,6 +251,12 @@ services:
       - observability
     restart: unless-stopped
     user: root
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   node-exporter:
     image: prom/node-exporter:v1.7.0
@@ -284,6 +282,11 @@ services:
       - observability
     restart: unless-stopped
     pid: host
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   observability:

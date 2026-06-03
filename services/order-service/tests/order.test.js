@@ -1,5 +1,18 @@
 const request = require('supertest');
 const app = require('../src/app');
+const orders = require('../src/store/orders');
+const { register } = require('../src/metrics/prometheus');
+
+beforeEach(async () => {
+  process.env.FAILURE_RATE = '0';
+  orders.clear();
+  // Reset all Prometheus metrics between tests to prevent counter accumulation
+  await register.resetMetrics();
+});
+
+afterAll(() => {
+  delete process.env.FAILURE_RATE;
+});
 
 describe('Order Service', () => {
   describe('GET /health', () => {
@@ -12,8 +25,6 @@ describe('Order Service', () => {
   });
 
   describe('POST /create-order', () => {
-    beforeEach(() => { process.env.FAILURE_RATE = '0'; });
-
     it('creates a valid order', async () => {
       const res = await request(app).post('/create-order').send({
         userId: 'user-123',
@@ -58,7 +69,6 @@ describe('Order Service', () => {
         totalAmount: 5
       });
       expect(res.status).toBe(500);
-      process.env.FAILURE_RATE = '0';
     });
   });
 
@@ -69,7 +79,6 @@ describe('Order Service', () => {
     });
 
     it('retrieves a created order by ID', async () => {
-      process.env.FAILURE_RATE = '0';
       const create = await request(app).post('/create-order').send({
         userId: 'user-456',
         items: [{ sku: 'GADGET', quantity: 1, price: 49.99 }],
@@ -91,6 +100,27 @@ describe('Order Service', () => {
       expect(res.text).toContain('orders_failed_total');
       expect(res.text).toContain('order_processing_latency_seconds');
       expect(res.text).toContain('active_orders_total');
+    });
+
+    it('increments orders_created_total on successful order', async () => {
+      await request(app).post('/create-order').send({
+        userId: 'metric-user',
+        items: [{ sku: 'ITEM', quantity: 1, price: 10 }],
+        totalAmount: 10
+      });
+      const res = await request(app).get('/metrics');
+      expect(res.text).toMatch(/orders_created_total\s+1/);
+    });
+
+    it('increments orders_failed_total on processing error', async () => {
+      process.env.FAILURE_RATE = '1';
+      await request(app).post('/create-order').send({
+        userId: 'metric-fail',
+        items: [{ sku: 'ITEM', quantity: 1, price: 5 }],
+        totalAmount: 5
+      });
+      const res = await request(app).get('/metrics');
+      expect(res.text).toMatch(/orders_failed_total\{reason="processing_error"\}\s+1/);
     });
   });
 });

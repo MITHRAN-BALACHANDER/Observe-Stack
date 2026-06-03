@@ -1,24 +1,3 @@
-const { activeOrdersTotal } = require('../metrics/prometheus');
-
-class OrderQueue {
-  constructor() {
-    this.queue = [];
-  }
-
-  enqueue(order) {
-    this.queue.push(order);
-    activeOrdersTotal.set(this.queue.length);
-  }
-
-  dequeue() {
-    const order = this.queue.shift();
-    activeOrdersTotal.set(this.queue.length);
-    return order;
-  }
-
-  size() {
-    return this.queue.length;
-  }
-}
-
-module.exports = new OrderQueue();
+// OrderQueue was scaffolded for a future queuing pattern.
+// createOrder.js currently uses the in-memory orders Map directly.
+// Leaving this file as a placeholder; wire it in when Redis/BullMQ is adopted.

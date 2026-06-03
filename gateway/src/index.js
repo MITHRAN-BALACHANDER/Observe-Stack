@@ -2,12 +2,15 @@ const express = require('express');
 const logger = require('./logging/logger');
 const correlationIdMiddleware = require('./middleware/correlationId');
 const metricsMiddleware = require('./middleware/metrics');
+const rateLimitMiddleware = require('./middleware/rateLimit');
+const authMiddleware = require('./middleware/authMiddleware');
 const { register } = require('./metrics/prometheus');
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(correlationIdMiddleware);
+app.use(rateLimitMiddleware);
 app.use(metricsMiddleware);
 
 app.get('/health', (req, res) => {
@@ -29,9 +32,12 @@ app.get('/metrics', async (req, res) => {
   res.end(await register.metrics());
 });
 
+// Auth routes are public — they issue the tokens
 app.use('/auth', require('./routes/auth'));
-app.use('/orders', require('./routes/orders'));
-app.use('/notifications', require('./routes/notifications'));
+
+// Protected routes require a valid JWT
+app.use('/orders', authMiddleware, require('./routes/orders'));
+app.use('/notifications', authMiddleware, require('./routes/notifications'));
 
 app.use((err, req, res, next) => {
   logger.error('gateway error', {
@@ -46,9 +52,21 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info('api-gateway started', { port: PORT });
   });
+
+  const shutdown = (signal) => {
+    logger.info('shutting down', { signal });
+    server.close(() => {
+      logger.info('server closed');
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 module.exports = app;

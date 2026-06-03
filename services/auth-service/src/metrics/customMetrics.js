@@ -1,15 +1,2 @@
-const { loginSuccessTotal, loginFailureTotal, authLatencySeconds } = require('./prometheus');
-
-function recordLoginSuccess() {
-  loginSuccessTotal.inc();
-}
-
-function recordLoginFailure(reason) {
-  loginFailureTotal.inc({ reason });
-}
-
-function recordLatency(method, path, status, durationSeconds) {
-  authLatencySeconds.observe({ method, path, status }, durationSeconds);
-}
-
-module.exports = { recordLoginSuccess, recordLoginFailure, recordLatency };
+// This helper layer was unused — auth routes and metricsMiddleware call
+// prometheus.js directly. Remove this file when refactoring metrics helpers.

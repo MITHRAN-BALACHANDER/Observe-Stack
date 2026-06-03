@@ -1,5 +1,13 @@
 const request = require('supertest');
 const app = require('../src/app');
+const users = require('../src/store/users');
+
+afterEach(() => {
+  // Remove any users registered during tests, preserving the seeded demo user
+  for (const key of users.keys()) {
+    if (key !== 'demo') users.delete(key);
+  }
+});
 
 describe('Auth Service', () => {
   describe('GET /health', () => {
@@ -44,8 +52,6 @@ describe('Auth Service', () => {
 
   describe('POST /login', () => {
     it('logs in the seeded demo user', async () => {
-      // Wait briefly for bcrypt seed to complete
-      await new Promise(r => setTimeout(r, 500));
       const res = await request(app).post('/login').send({
         username: 'demo',
         password: 'password123'
@@ -83,6 +89,15 @@ describe('Auth Service', () => {
         .send({ username: 'demo', password: 'password123' });
       expect(res.headers['x-correlation-id']).toBe('test-cid-123');
     });
+
+    it('rejects unsafe x-correlation-id with special characters', async () => {
+      const res = await request(app)
+        .post('/login')
+        .set('x-correlation-id', '<script>alert(1)</script>')
+        .send({ username: 'demo', password: 'password123' });
+      // Unsafe header is ignored and a generated UUID is used instead
+      expect(res.headers['x-correlation-id']).not.toBe('<script>alert(1)</script>');
+    });
   });
 
   describe('GET /metrics', () => {
@@ -90,6 +105,13 @@ describe('Auth Service', () => {
       const res = await request(app).get('/metrics');
       expect(res.status).toBe(200);
       expect(res.text).toContain('auth_requests_total');
+      expect(res.text).toContain('http_requests_total');
+    });
+
+    it('records request metrics on login', async () => {
+      await request(app).post('/login').send({ username: 'demo', password: 'password123' });
+      const res = await request(app).get('/metrics');
+      expect(res.text).toContain('login_success_total');
     });
   });
 });

@@ -35,9 +35,7 @@ groups:
 
       - record: job:http_error_ratio:rate5m
         expr: >
-          job:http_errors:rate5m
-          /
-          (job:http_requests:rate5m + 0.001)
+          job:http_errors:rate5m / (job:http_requests:rate5m + 0.001)
 
       - record: job:http_latency_p50:rate5m
         expr: >

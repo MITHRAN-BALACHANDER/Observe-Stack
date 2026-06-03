@@ -11,10 +11,9 @@ const orders = require('../store/orders');
 
 const router = express.Router();
 
-const FAILURE_RATE = parseFloat(process.env.FAILURE_RATE || '0.05');
+const getFailureRate = () => parseFloat(process.env.FAILURE_RATE || '0.05');
 
 function simulateProcessingDelay() {
-  // Simulates realistic processing latency between 50ms and 800ms
   const base = 50 + Math.random() * 300;
   const spike = Math.random() < 0.1 ? Math.random() * 500 : 0;
   return base + spike;
@@ -31,13 +30,12 @@ router.post('/', async (req, res) => {
   }
 
   const processingStart = process.hrtime.bigint();
-  const orderId = `ORD-${uuidv4().split('-')[0].toUpperCase()}`;
+  const orderId = `ORD-${uuidv4().replace(/-/g, '').slice(0, 16).toUpperCase()}`;
 
   activeOrdersTotal.inc();
 
   try {
-    // Simulate random processing failures
-    if (Math.random() < FAILURE_RATE) {
+    if (Math.random() < getFailureRate()) {
       throw new Error('downstream payment processor timeout');
     }
 
@@ -66,16 +64,12 @@ router.post('/', async (req, res) => {
     const durationSeconds = Number(process.hrtime.bigint() - processingStart) / 1e9;
     orderProcessingLatencySeconds.observe(durationSeconds);
     ordersFailedTotal.inc({ reason: 'processing_error' });
-    activeOrdersTotal.dec();
 
     log.error('order processing failed', { orderId, userId, error: err.message });
 
     res.status(500).json({ error: 'order processing failed', orderId });
   } finally {
-    // Decrement active after confirmed or failed (no longer in-flight)
-    if (orders.has(orderId)) {
-      activeOrdersTotal.dec();
-    }
+    activeOrdersTotal.dec();
   }
 });
 

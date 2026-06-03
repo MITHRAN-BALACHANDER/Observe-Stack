@@ -16,12 +16,14 @@
     "winston": "^3.11.0"
   },
   "devDependencies": {
+    "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "supertest": "^6.3.4"
   },
   "jest": {
     "testEnvironment": "node",
-    "collectCoverageFrom": ["src/**/*.js"]
+    "collectCoverageFrom": ["src/**/*.js"],
+    "transformIgnorePatterns": ["/node_modules/(?!uuid)"]
   }
 }

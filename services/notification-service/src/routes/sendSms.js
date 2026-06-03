@@ -6,15 +6,16 @@ const { notificationsSentTotal, notificationsFailedTotal, notificationLatencySec
 const router = express.Router();
 
 const FAILURE_RATE = () => parseFloat(process.env.FAILURE_RATE || '0.08');
+const PHONE_RE = /^\+[1-9]\d{6,14}$/;
 
 router.post('/', async (req, res) => {
   const { phoneNumber, message } = req.body;
   const log = logger.child({ requestId: req.requestId, correlationId: req.correlationId });
 
-  if (!phoneNumber || !message) {
+  if (!phoneNumber || !PHONE_RE.test(phoneNumber) || !message) {
     notificationsFailedTotal.inc({ type: 'sms', reason: 'validation_error' });
-    log.warn('sms send rejected: missing fields');
-    return res.status(400).json({ error: 'phoneNumber and message are required' });
+    log.warn('sms send rejected: missing or invalid fields');
+    return res.status(400).json({ error: 'phoneNumber (E.164 format, e.g. +15551234567) and message are required' });
   }
 
   const deliveryStart = process.hrtime.bigint();

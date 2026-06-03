@@ -68,9 +68,9 @@ scrape_configs:
             - "2006-01-02T15:04:05.000Z"
             - "2006-01-02T15:04:05Z"
 
-      # Drop healthcheck noise to reduce log volume
+      # Drop healthcheck polling noise — match only the exact health endpoint path
       - drop:
-          expression: '.*GET /health.*'
+          expression: '"path":"/health"'
           drop_counter_reason: healthcheck_noise
 
   # Fallback: collect system logs from /var/log
@@ -84,6 +84,7 @@ scrape_configs:
           __path__: /var/log/*.log
     pipeline_stages:
       - regex:
-          expression: '(?P<timestamp>\S+ \S+) (?P<level>\S+) (?P<message>.*)'
+          expression: '(?P<timestamp>\S+ \S+) (?P<level>\w+) (?P<service>\S+)?: (?P<message>.*)'
       - labels:
           level:
+          service:
